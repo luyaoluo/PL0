@@ -45,7 +45,7 @@ void getch(void)
 		} // while
 		printf("\n");
 		line[++ll] = ' ';
-	}
+	}//read a new line into array line
 	ch = line[++cc];
 } // getch
 
@@ -361,9 +361,9 @@ void term(symset fsys)
 	int mulop;
 	symset set;
 
-	set = uniteset(fsys, createset(SYM_TIMES, SYM_SLASH, SYM_NULL));
+	set = uniteset(fsys, createset(SYM_TIMES, SYM_SLASH, SYM_MOD, SYM_NULL));
 	factor(set);
-	while (sym == SYM_TIMES || sym == SYM_SLASH)
+	while (sym == SYM_TIMES || sym == SYM_SLASH || sym == SYM_MOD || sym == SYM_MOD)
 	{
 		mulop = sym;
 		getsym();
@@ -372,9 +372,13 @@ void term(symset fsys)
 		{
 			gen(OPR, 0, OPR_MUL);
 		}
-		else
+		else if (mulop == SYM_SLASH)
 		{
 			gen(OPR, 0, OPR_DIV);
+		}
+		else
+		{
+			gen(OPR, 0, OPR_MOD);
 		}
 	} // while
 	destroyset(set);
@@ -408,6 +412,66 @@ void expression(symset fsys)
 } // expression
 
   //////////////////////////////////////////////////////////////////////
+
+void and_expression(symset fsys)
+{
+	void condition(symset fsys);
+	int bitop;
+	symset set;
+
+	set = uniteset(fsys, createset(SYM_AND, SYM_NULL));
+
+	condition(set);
+	while (sym == SYM_AND)
+	{
+		bitop = sym;
+		getsym();
+		condition(set);
+		gen(OPR, 0, OPR_AND);
+	} // while
+
+	destroyset(set);
+} // and
+
+void xor_expression(symset fsys)
+{
+	int bitop;
+	symset set;
+
+	set = uniteset(fsys, createset(SYM_XOR, SYM_NULL));
+
+	and_expression(set);
+	while (sym == SYM_XOR)
+	{
+		bitop = sym;
+		getsym();
+		and_expression(set);
+		gen(OPR, 0, OPR_XOR);
+	} // while
+
+	destroyset(set);
+} // xor
+
+void or_expression(symset fsys)
+{
+	int bitop;
+	symset set;
+
+	set = uniteset(fsys, createset(SYM_OR, SYM_NULL));
+
+	xor_expression(set);
+	while (sym == SYM_OR)
+	{
+		bitop = sym;
+		getsym();
+		xor_expression(set);
+		gen(OPR, 0, OPR_OR);
+	} // while
+
+	destroyset(set);
+} // or
+
+  //////////////////////////////////////////////////////////////////////
 void condition(symset fsys)
 {
 	int relop;
@@ -425,9 +489,7 @@ void condition(symset fsys)
 		expression(set);
 		destroyset(set);
 		if (!inset(sym, relset))
-		{
-			error(20);
-		}
+		{}							//remove error 20,allow conditon to be a expression.
 		else
 		{
 			relop = sym;
@@ -485,7 +547,7 @@ void statement(symset fsys)
 		{
 			error(13); // ':=' expected.
 		}
-		expression(fsys);
+		or_expression(fsys);
 		mk = (mask*)&table[i];
 		if (i)
 		{
@@ -793,6 +855,28 @@ void interpret()
 					continue;
 				}
 				stack[top] /= stack[top + 1];
+				break;
+			case OPR_MOD:
+				top--;
+				if (stack[top + 1] == 0)
+				{
+					fprintf(stderr, "Runtime Error: Divided by zero.\n");
+					fprintf(stderr, "Program terminated.\n");
+					continue;
+				}
+				stack[top] %= stack[top + 1];
+				break;
+			case OPR_AND:
+				top--;
+				stack[top] &= stack[top + 1];
+				break;
+			case OPR_OR:
+				top--;
+				stack[top] |= stack[top + 1];
+				break;
+			case OPR_XOR:
+				top--;
+				stack[top] ^= stack[top + 1];
 				break;
 			case OPR_ODD:
 				stack[top] %= 2;
