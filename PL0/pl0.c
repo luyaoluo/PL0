@@ -91,17 +91,17 @@ void getsym(void)
 		if (k > MAXNUMLEN)
 			error(25);     // The number is too great.
 	}
-	else if (ch == ':')
+	else if (ch == '=')
 	{
 		getch();
 		if (ch == '=')
 		{
-			sym = SYM_BECOMES; // :=
+			sym = SYM_EQU; // ==
 			getch();
 		}
 		else
 		{
-			sym = SYM_NULL;       // illegal?
+			sym = SYM_BECOMES;       // =
 		}
 	}
 	else if (ch == '>')
@@ -287,7 +287,7 @@ void listcode(int from, int to)
   //////////////////////////////////////////////////////////////////////
 void factor(symset fsys)
 {
-	void expression(symset fsys);
+	void becomes_expression(symset fsys);
 	int i;
 	symset set;
 
@@ -334,7 +334,7 @@ void factor(symset fsys)
 		{
 			getsym();
 			set = uniteset(createset(SYM_RPAREN, SYM_NULL), fsys);
-			expression(set);
+			becomes_expression(set);
 			destroyset(set);
 			if (sym == SYM_RPAREN)
 			{
@@ -348,7 +348,7 @@ void factor(symset fsys)
 		else if (sym == SYM_MINUS) // UMINUS,  Expr -> '-' Expr
 		{
 			getsym();
-			expression(fsys);
+			becomes_expression(fsys);
 			gen(OPR, 0, OPR_NEG);
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);
@@ -363,7 +363,7 @@ void term(symset fsys)
 
 	set = uniteset(fsys, createset(SYM_TIMES, SYM_SLASH, SYM_MOD, SYM_NULL));
 	factor(set);
-	while (sym == SYM_TIMES || sym == SYM_SLASH || sym == SYM_MOD || sym == SYM_MOD)
+	while (sym == SYM_TIMES || sym == SYM_SLASH || sym == SYM_MOD)
 	{
 		mulop = sym;
 		getsym();
@@ -471,6 +471,40 @@ void or_expression(symset fsys)
 	destroyset(set);
 } // or
 
+void becomes_expression(symset fsys)
+{
+	int becomeop;
+	symset set;
+	int i;
+
+	set = uniteset(fsys, createset(SYM_BECOMES, SYM_NULL));
+	or_expression(set);
+	if (sym == SYM_BECOMES)
+	{ // variable assignment
+		becomeop = sym;
+		mask* mk;
+		if (!(i = position(id)))
+		{
+			error(11); // Undeclared identifier.
+		}
+		else if (table[i].kind != ID_VARIABLE)
+		{
+			error(12); // Illegal assignment.
+			i = 0;
+		}
+		getsym();
+		or_expression(fsys);
+		mk = (mask*)&table[i];
+		if (i)
+		{
+			gen(STO, level - mk->level, mk->address);
+		}
+	}
+	
+
+	destroyset(set);
+} // becomes
+
   //////////////////////////////////////////////////////////////////////
 void condition(symset fsys)
 {
@@ -526,35 +560,8 @@ void statement(symset fsys)
 	int i, cx1, cx2;
 	symset set1, set;
 
-	if (sym == SYM_IDENTIFIER)
-	{ // variable assignment
-		mask* mk;
-		if (!(i = position(id)))
-		{
-			error(11); // Undeclared identifier.
-		}
-		else if (table[i].kind != ID_VARIABLE)
-		{
-			error(12); // Illegal assignment.
-			i = 0;
-		}
-		getsym();
-		if (sym == SYM_BECOMES)
-		{
-			getsym();
-		}
-		else
-		{
-			error(13); // ':=' expected.
-		}
-		or_expression(fsys);
-		mk = (mask*)&table[i];
-		if (i)
-		{
-			gen(STO, level - mk->level, mk->address);
-		}
-	}
-	else if (sym == SYM_CALL)
+	
+	if (sym == SYM_CALL)
 	{ // procedure call
 		getsym();
 		if (sym != SYM_IDENTIFIER)
@@ -652,6 +659,10 @@ void statement(symset fsys)
 		statement(fsys);
 		gen(JMP, 0, cx1);
 		code[cx2].a = cx;
+	}
+	else if(sym != SYM_END)
+	{
+		becomes_expression(fsys);
 	}
 	test(fsys, phi, 19);
 } // statement
@@ -970,6 +981,7 @@ void main()
 	set1 = createset(SYM_PERIOD, SYM_NULL);
 	set2 = uniteset(declbegsys, statbegsys);
 	set = uniteset(set1, set2);
+	set = uniteset(set, facbegsys);
 	block(set);
 	destroyset(set1);
 	destroyset(set2);
