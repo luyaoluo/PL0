@@ -314,7 +314,8 @@ void factor(symset fsys)
 					gen(LOD, level - mk->level, mk->address);
 					break;
 				case ID_PROCEDURE:
-					error(21); // Procedure identifier can not be in an expression.
+					mk = (mask*)&table[i];
+					gen(CAL, level - mk->level, mk->address);
 					break;
 				} // switch
 			}
@@ -561,33 +562,8 @@ void statement(symset fsys)
 	symset set1, set;
 
 	
-	if (sym == SYM_CALL)
-	{ // procedure call
-		getsym();
-		if (sym != SYM_IDENTIFIER)
-		{
-			error(14); // There must be an identifier to follow the 'call'.
-		}
-		else
-		{
-			if (!(i = position(id)))
-			{
-				error(11); // Undeclared identifier.
-			}
-			else if (table[i].kind == ID_PROCEDURE)
-			{
-				mask* mk;
-				mk = (mask*)&table[i];
-				gen(CAL, level - mk->level, mk->address);
-			}
-			else
-			{
-				error(15); // A constant or variable can not be called. 
-			}
-			getsym();
-		}
-	}
-	else if (sym == SYM_IF)
+	
+	if (sym == SYM_IF)
 	{ // if statement
 		getsym();
 		set1 = createset(SYM_THEN, SYM_DO, SYM_NULL);
