@@ -225,7 +225,7 @@ int position(char* id)
 	i = tx + 1;
 	while (strcmp(table[--i].name, id) != 0);
 	return i;
-} // position
+} // position,get the position of id in table.
 
   //////////////////////////////////////////////////////////////////////
 void constdeclaration()
@@ -235,8 +235,8 @@ void constdeclaration()
 		getsym();
 		if (sym == SYM_EQU || sym == SYM_BECOMES)
 		{
-			if (sym == SYM_BECOMES)
-				error(1); // Found ':=' when expecting '='.
+			if (sym == SYM_EQU)
+				error(1); // Found '==' when expecting '='.
 			getsym();
 			if (sym == SYM_NUMBER)
 			{
@@ -636,6 +636,10 @@ void statement(symset fsys)
 		gen(JMP, 0, cx1);
 		code[cx2].a = cx;
 	}
+	else if (sym == SYM_RETURN) 
+	{
+		becomes_expression(fsys);
+	}
 	else if(sym != SYM_END)
 	{
 		becomes_expression(fsys);
@@ -945,7 +949,7 @@ void main()
 
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
-	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
+	statbegsys = createset(SYM_BEGIN, SYM_RETURN, SYM_IF, SYM_WHILE, SYM_NULL);
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables

@@ -46,7 +46,7 @@ enum symtype
 	SYM_THEN,
 	SYM_WHILE,
 	SYM_DO,
-	SYM_CALL,
+	SYM_RETURN,
 	SYM_CONST,
 	SYM_VAR,
 	SYM_PROCEDURE
@@ -137,13 +137,13 @@ instruction code[CXMAX];
 char* word[NRW + 1] =
 {
 	"", /* place holder */
-	"begin", "call", "const", "do", "end","if",
+	"begin", "return", "const", "do", "end","if",
 	"odd", "procedure", "then", "var", "while"
 };
 
 int wsym[NRW + 1] =
 {
-	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
+	SYM_NULL, SYM_BEGIN, SYM_RETURN, SYM_CONST, SYM_DO, SYM_END,
 	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE
 };
 
